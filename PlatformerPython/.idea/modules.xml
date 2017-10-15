@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../../Python/Platformer/.idea/Platformer.iml" filepath="$PROJECT_DIR$/../../Python/Platformer/.idea/Platformer.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/PlatformerPython.iml" filepath="$PROJECT_DIR$/.idea/PlatformerPython.iml" />
     </modules>
   </component>

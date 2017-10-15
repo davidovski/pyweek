@@ -5,6 +5,8 @@ import random
 # Your code here
 maxX = 0
 
+ASSET_FOLDER = "assets/"
+
 level_1 = [
     "######################################################################",
     "#                                                                    #",
@@ -56,14 +58,14 @@ def custom_game_init():
 
     player = {
         "images": [
-            pygame.image.load("KaleLeft.png"),
-            pygame.image.load("KaleLeft.png"),
-            pygame.image.load("KaleLeft.png"),
-            pygame.image.load("KaleLeft.png"),
-            pygame.image.load("KaleRight.png"),
-            pygame.image.load("KaleRight.png"),
-            pygame.image.load("KaleRight.png"),
-            pygame.image.load("KaleRight.png")
+            pygame.image.load(ASSET_FOLDER + "KaleLeft.png"),
+            pygame.image.load(ASSET_FOLDER + "KaleLeft.png"),
+            pygame.image.load(ASSET_FOLDER + "KaleLeft.png"),
+            pygame.image.load(ASSET_FOLDER + "KaleLeft.png"),
+            pygame.image.load(ASSET_FOLDER + "KaleRight.png"),
+            pygame.image.load(ASSET_FOLDER + "KaleRight.png"),
+            pygame.image.load(ASSET_FOLDER + "KaleRight.png"),
+            pygame.image.load(ASSET_FOLDER + "KaleRight.png")
         ],
         "rect": pygame.Rect(0, 0, 32, 32),
         "start_rect": pygame.Rect(0, 0, 32, 32),
@@ -71,22 +73,22 @@ def custom_game_init():
     }
 
     level_exit = {
-        "image": pygame.image.load("exit_32.png"),
+        "image": pygame.image.load(ASSET_FOLDER + "exit_32.png"),
         "rect": pygame.Rect(0, 0, 32, 32)
     }
 
-    background_image = pygame.image.load("background.png")
+    background_image = pygame.image.load(ASSET_FOLDER + "background.png")
 
     enemy_images = []
-    enemy_images.append(pygame.image.load("enemy_left_32_0.png"))
-    enemy_images.append(pygame.image.load("enemy_left_32_1.png"))
-    enemy_images.append(pygame.image.load("enemy_right_32_0.png"))
-    enemy_images.append(pygame.image.load("enemy_right_32_1.png"))
+    enemy_images.append(pygame.image.load(ASSET_FOLDER + "enemy_left_32_0.png"))
+    enemy_images.append(pygame.image.load(ASSET_FOLDER + "enemy_left_32_1.png"))
+    enemy_images.append(pygame.image.load(ASSET_FOLDER + "enemy_right_32_0.png"))
+    enemy_images.append(pygame.image.load(ASSET_FOLDER + "enemy_right_32_1.png"))
 
-    treasure_image = pygame.image.load("treasure_32.png")
+    treasure_image = pygame.image.load(ASSET_FOLDER + "treasure_32.png")
 
     guns = {
-        "image": pygame.image.load("small_pistol.png"),
+        "image": pygame.image.load(ASSET_FOLDER + "small_pistol.png"),
         "rect": pygame.Rect(0, 0, 32, 32)
     }
     guns['rect'] = guns['rect'].move(999,146)
@@ -183,13 +185,13 @@ def draw_game_running():
         player_frame_start = 0
     
 
-    wall_middle_sprite = pygame.image.load("wall_32.png")
-    wall_left_sprite = pygame.image.load("wall_left_32.png")
-    wall_right_sprite = pygame.image.load("wall_right_32.png")
+    wall_middle_sprite = pygame.image.load(ASSET_FOLDER + "wall_32.png")
+    wall_left_sprite = pygame.image.load(ASSET_FOLDER + "wall_left_32.png")
+    wall_right_sprite = pygame.image.load(ASSET_FOLDER + "wall_right_32.png")
 
     map_area = pygame.Rect(0, 0, 0, 0)
     map_area.unionall_ip(wall_list)
-    
+
     screen.blit(background_image, (0,0))
     for wall in wall_list:
         right_rect = wall.move(32, 0)
@@ -332,9 +334,9 @@ def create_map_surface(wall_list):
     # Find the size of the image
     # required by merging all the rectangles
     # in the list
-    wall_middle_sprite = pygame.image.load("wall_32.png")
-    wall_left_sprite = pygame.image.load("wall_left_32.png")
-    wall_right_sprite = pygame.image.load("wall_right_32.png")
+    wall_middle_sprite = pygame.image.load(ASSET_FOLDER + "wall_32.png")
+    wall_left_sprite = pygame.image.load(ASSET_FOLDER + "wall_left_32.png")
+    wall_right_sprite = pygame.image.load(ASSET_FOLDER + "wall_right_32.png")
     map_area = pygame.Rect(0, 0, 0, 0)
     map_area.unionall_ip(wall_list)
 
