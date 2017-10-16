@@ -12,12 +12,13 @@ class spritesheet(object):
         self.sheet = pygame.image.load(filename)
 
     # Load a specific image from a specific rectangle
-    def image_at(self, rectangle, colorkey = None):
+    def image_at(self, rectangle, transparent=(0, 0)):
         "Loads image from x,y,x+offset,y+offset"
         rect = pygame.Rect(rectangle)
-        image = pygame.Surface(rect.size).convert()
+        image = pygame.Surface(rect.size).copy()
         image.blit(self.sheet, (0, 0), rect)
-        colorkey = image.get_at((0,0))
+
+        colorkey = image.get_at(transparent)
         image.set_colorkey(colorkey, pygame.RLEACCEL)
         return image
     # Load a whole bunch of images and return them as a list

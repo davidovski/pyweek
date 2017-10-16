@@ -528,7 +528,7 @@ def game_init():
     pygame.init()
 
     # Screen
-    screen = pygame.display.set_mode((960, 510))
+    screen = pygame.display.set_mode((960, 510), pygame.DOUBLEBUF)
 
     keys = pygame.key.get_pressed()
     last_keys = keys

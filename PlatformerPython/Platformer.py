@@ -32,19 +32,39 @@ level_b6 = [
 
 level_b5 = [
     "##############################",
-    "##############################",
-    "##############################",
     "#                            #",
-    "#                           T#",
-    "#                      #######",
-    "#                x           #",
-    "#            ########        #",
-    "#o              ##          T#",
-    "##############################",
-    "##############################",
-    "##############################",
-    "##############################",
-    "##############################",
+    "# o                          #",
+    "######                       #",
+    "#                            #",
+    "#                            #",
+    "######                       #",
+    "#                            #",
+    "#                            #",
+    "######                       #",
+    "#                            #",
+    "#                            #",
+    "######                       #",
+    "#                            #",
+    "#                            #",
+    "######                       #",
+    "#                            #",
+    "#                            #",
+    "######                       #",
+    "#                            #",
+    "#                            #",
+    "######                       #",
+    "#                            #",
+    "#                            #",
+    "######                       #",
+    "#                            #",
+    "#                            #",
+    "######                       #",
+    "#                            #",
+    "#                            #",
+    "######                       #",
+    "#                            #",
+    "#                            #",
+    "######            x          #",
     "##############################",
 ]
 
@@ -226,11 +246,11 @@ level_list.append(level_1)
 level_list.append(level_2)
 level_list.append(level_3)
 
-ss = spritesheet.spritesheet('assets/blob_idle.png')
-ssr = spritesheet.spritesheet('assets/blob_moving.png')
-ssl = spritesheet.spritesheet('assets/blob_moving.png')
+ss = spritesheet.spritesheet('assets/man_idle.png')
+ssr = spritesheet.spritesheet('assets/man_moving.png')
+ssl = spritesheet.spritesheet('assets/man_moving.png')
 
-ssd = spritesheet.spritesheet('assets/blob_ducked.png')
+ssd = spritesheet.spritesheet('assets/man_ducked.png')
 
 
 
@@ -250,7 +270,7 @@ spee = {
     "do": False,
     "timer": 0,
     "beenonce": False,
-    "shade": False
+    "shade": True
 }
 
 freeze = False
@@ -612,8 +632,7 @@ def update_game_running():
                 v = [16, 0]
             shoot_bullet((player['rect'][0], player['rect'][1] + 16), v)
 
-        print(str(key_times[pygame.K_d]) + " with " +str(key_taps[pygame.K_d]) + " taps")
-        print(str(player["dash"]))
+
 
         if player["dash"][0] > 0:
             player["dash"][0] = -1
@@ -711,7 +730,7 @@ def update_game_running():
 mapX = 0
 
 
-mapScroll = {
+mapScrollX = {
     "direction": 0,
     "current_speed": 0,
     "speed": 8,
@@ -719,6 +738,19 @@ mapScroll = {
     #the percentage of the screen to start scrolling at
     "percent_of_screen": 40,
 }
+
+mapY = 0
+
+
+mapScrollY = {
+    "direction": 0,
+    "current_speed": 0,
+    "speed": 16,
+    "acceleration": 8,
+    #the percentage of the screen to start scrolling at
+    "percent_of_screen": 40,
+}
+
 
 def draw_game_running():
     global game_surface
@@ -730,20 +762,22 @@ def draw_game_running():
 
     global score
     global keys
-    global clock, mapX
+    global clock, mapX, mapY
 
 
     levelWidth = len(level_list[level_index][0]) * 32
+
+    levelHeight = len(level_list[level_index]) * 32
     halfScreen = screen.get_width() / 2
 
     map_area = pygame.Rect(0, 0, 0, 0)
     map_area.unionall_ip(wall_list)
     game_surface.blit(background_image, (0, 0))
     map_surface.set_colorkey( (0,0,0), pygame.RLEACCEL )
-    game_surface.blit(map_surface, (-mapX, 0))
+    game_surface.blit(map_surface, (-mapX, -mapY))
 
     for switch in switch_list:
-        game_surface.blit(switch['image'], switch['rect'].move(-mapX, 0))
+        game_surface.blit(switch['image'], switch['rect'].move(-mapX, -mapY))
         # if switch['active']:
         #     game_surface.blit(switch_images[0], switch['rect'])
         # elif not ['active']:
@@ -756,25 +790,25 @@ def draw_game_running():
             enemy_frame_start = 2
         else:
             enemy_frame_start = 0
-        game_surface.blit(enemy['images'][enemy_frame_start + enemy_frame], enemy['rect'].move(-mapX, 0))
+        game_surface.blit(enemy['images'][enemy_frame_start + enemy_frame], enemy['rect'].move(-mapX, -mapY))
     if keys[pygame.K_a]:
 
-        game_surface.blit(player["assets"]["left"][int(alpha / 2) % len(player["assets"]["left"])], (player['rect'][0] - mapX, player["rect"][1] + 1))
+        game_surface.blit(player["assets"]["left"][int(alpha / 2) % len(player["assets"]["left"])], (player['rect'][0] - mapX, player["rect"][1] + 1 - mapY))
     elif keys[pygame.K_d]:
-        game_surface.blit(player["assets"]["right"][int(alpha / 2) % len(player["assets"]["right"])], (player['rect'][0] - mapX, player["rect"][1] + 1))
+        game_surface.blit(player["assets"]["right"][int(alpha / 2) % len(player["assets"]["right"])], (player['rect'][0] - mapX, player["rect"][1] + 1 - mapY))
 
     else:
         if player["ducked"]:
-            game_surface.blit(player["assets"]["ducked"][int(alpha / 2) % len(player["assets"]["ducked"])], (player['rect'][0]- mapX, player["rect"][1] + 1))
+            game_surface.blit(player["assets"]["ducked"][int(alpha / 2) % len(player["assets"]["ducked"])], (player['rect'][0]- mapX, player["rect"][1] + 1 - mapY))
         else:
-            game_surface.blit(player["assets"]["idle"][int(alpha / 2) % len(player["assets"]["idle"])], (player['rect'][0]- mapX, player["rect"][1] + 1))
+            game_surface.blit(player["assets"]["idle"][int(alpha / 2) % len(player["assets"]["idle"])], (player['rect'][0]- mapX, player["rect"][1] + 1 - mapY))
     win = True
     for switch in switch_list:
         if not switch['active']:
             win = False
             break
     if win:
-        game_surface.blit(level_exit['images'][int(alpha / 4) % len(player["images"])], level_exit['rect'].move(-mapX, 0))
+        game_surface.blit(level_exit['images'][int(alpha / 4) % len(player["images"])], level_exit['rect'].move(-mapX, -mapY))
         # for i in range(0, random.randint(8, 400)):
         #     pos = level_exit['rect'].move(0,0)
         #     pos[0] += random.randint(4, 26)
@@ -799,7 +833,7 @@ def draw_game_running():
 
     level_text = level_font.render(level_name, 1, (255, 255, 255))
 
-    game_surface.blit(level_text, (4, 4))
+    # hud_surface.blit(level_text, (4, 4))
 
     score_string = str(score)
     for i in range(0, 10 - len(score_string)):
@@ -810,27 +844,46 @@ def draw_game_running():
     position.midbottom = game_surface.get_rect().midbottom
 
     fps = score_font.render("fps: " + str(int(clock.get_fps())) + " p=" + str(len(particles))+ " e=" + str(len(enemy_list)), 1, (255, 255, 255))
-    game_surface.blit(fps, (4, 490))
+    hud_surface.blit(fps, (4, 490))
+    # hud_surface.blit(rendered_text, position)
 
-    if mapScroll["current_speed"] > mapScroll["direction"]:
-        mapScroll["current_speed"] -= mapScroll["acceleration"]
-    elif mapScroll["current_speed"] < mapScroll["direction"]:
-        mapScroll["current_speed"] += mapScroll["acceleration"]
-    mapX += mapScroll["current_speed"]
 
-    if player['rect'].x - mapX > (1 - mapScroll["percent_of_screen"] / 100) * screen.get_width():
-        mapScroll["direction"] = mapScroll["speed"]
-    elif player['rect'].x - mapX < (mapScroll["percent_of_screen"] / 100) * screen.get_width():
-        mapScroll["direction"] = -mapScroll["speed"]
+    if mapScrollX["current_speed"] > mapScrollX["direction"]:
+        mapScrollX["current_speed"] -= mapScrollX["acceleration"]
+    elif mapScrollX["current_speed"] < mapScrollX["direction"]:
+        mapScrollX["current_speed"] += mapScrollX["acceleration"]
+    mapX += mapScrollX["current_speed"]
+
+    if mapScrollY["current_speed"] > mapScrollY["direction"]:
+        mapScrollY["current_speed"] -= mapScrollY["acceleration"]
+    elif mapScrollY["current_speed"] < mapScrollY["direction"]:
+        mapScrollY["current_speed"] += mapScrollY["acceleration"]
+    mapY += mapScrollY["current_speed"]
+
+    if player['rect'].x - mapX > (1 - mapScrollX["percent_of_screen"] / 100) * screen.get_width():
+        mapScrollX["direction"] = mapScrollX["speed"]
+    elif player['rect'].x - mapX < (mapScrollX["percent_of_screen"] / 100) * screen.get_width():
+        mapScrollX["direction"] = -mapScrollX["speed"]
     else:
-        mapScroll["direction"] = 0
+        mapScrollX["direction"] = 0
 
     if mapX < 0:
         mapX = 0
     elif mapX > levelWidth - screen.get_width():
         mapX = levelWidth - screen.get_width()
 
-    game_surface.blit(rendered_text, position)
+    if player['rect'].y - mapY > (1 - mapScrollY["percent_of_screen"] / 100) * screen.get_height():
+        mapScrollY["direction"] = mapScrollY["speed"]
+    elif player['rect'].y - mapY < (mapScrollY["percent_of_screen"] / 100) * screen.get_height():
+        mapScrollY["direction"] = -mapScrollY["speed"]
+    else:
+        mapScrollY["direction"] = 0
+
+    if mapY < 0:
+        mapY = 0
+    elif mapY > levelHeight - screen.get_height():
+        mapY = levelHeight - screen.get_height()
+
 
     return
 
@@ -932,9 +985,9 @@ def create_map_surface(wall_list):
     # Find the size of the image
     # required by merging all the rectangles
     # in the list
-    wall_middle_sprite = pygame.image.load("assets/wall_64.png")
-    wall_left_sprite = pygame.image.load("assets/wall_64.png")
-    wall_right_sprite = pygame.image.load("assets/wall_64.png")
+    wall_middle_sprite = pygame.image.load("assets/wall_32.png")
+    wall_left_sprite = pygame.image.load("assets/wall_left_32.png")
+    wall_right_sprite = pygame.image.load("assets/wall_right_32.png")
     map_area = pygame.Rect(0, 0, 0, 0)
     map_area.unionall_ip(wall_list)
 
@@ -1203,7 +1256,7 @@ def game_init():
     global joystick
     global keys, last_keys
     global game_state_dict
-    global current_game_state
+    global current_game_state, hud_surface
     global screen, key_times, key_taps
 
     # Initialise pygame
@@ -1211,6 +1264,7 @@ def game_init():
 
     # game_surface
     game_surface = pygame.Surface((960, 510))
+    hud_surface = pygame.Surface((960, 510))
     screen = pygame.display.set_mode((960, 510))
     #screen = pygame.display.set_mode((2560, 1600), pygame.FULLSCREEN |pygame.HWSURFACE | pygame.DOUBLEBUF)
     keys = []
@@ -1364,9 +1418,19 @@ def game_update():
 
 alpha = 0
 
-vignette = pygame.image.load("assets/vignette.png")
-colorkey = vignette.get_at((128, 128))
-vignette.set_colorkey(colorkey)
+vignette1 = pygame.image.load("assets/vignette1.png")
+colorkey = vignette1.get_at((128, 128))
+vignette1.set_colorkey(colorkey)
+
+vignette2 = pygame.image.load("assets/vignette2.png")
+colorkey = vignette2.get_at((128, 128))
+vignette2.set_colorkey(colorkey)
+
+vignette3 = pygame.image.load("assets/vignette3.png")
+colorkey = vignette3.get_at((128, 128))
+vignette3.set_colorkey(colorkey)
+
+vignette_amin = [vignette1, vignette2, vignette3, vignette2]
 
 def game_draw():
 
@@ -1383,11 +1447,12 @@ def game_draw():
     global screen
     global quake
     global freeze
-    global level_index
+    global level_index, hud_surface
 
     alpha+=1
     # Clear the game_surface
     game_surface.fill((103, 103, 103))
+    hud_surface.fill((0, 0, 0))
     # spee["shade"] = True
 
 
@@ -1432,13 +1497,52 @@ def game_draw():
 
     if spee["shade"] and current_game_state != game_state_dict["start"]:
 
-        rect = pygame.Rect(player["rect"][0] - (48 + 64) - mapX, player["rect"][1] - (48 + 64), 256, 256)
-        rect = rect.clamp(pygame.Rect(0, 0, game_surface.get_width(), game_surface.get_height()))
-        part = game_surface.subsurface(rect)
+        vignette_number = int(alpha / 5 % len(vignette_amin))
+
+        rect = pygame.Rect(player["rect"][0] - (48 + 64) - mapX, player["rect"][1] - (48 + 64) - mapY, 256, 256)
+        # rect = rect.clamp(pygame.Rect(0, 0, game_surface.get_width(), game_surface.get_height()))
+
+        # rect.inflate_ip(0, 0)
+
+        doOnOpposite = [False, False]
+
+        if rect.x < 0:
+            m = rect.width + rect.x
+            rect[2] = m
+            rect[0] = 0
+            doOnOpposite[0] = True
+        rect.normalize()
+        if rect.y < 0:
+            m = rect.height + rect.y
+            rect[3] = m
+            rect[1] = 0
+            doOnOpposite[1] = True
+        rect.normalize()
+        if rect.x + rect.width > game_surface.get_width():
+            rect[2] = game_surface.get_width() - rect.x
+        rect.normalize()
+        if rect.y + rect.height > game_surface.get_height():
+            rect[3] = game_surface.get_height() - rect.y
+        rect.normalize()
+        print(str(doOnOpposite))
+        print(str(rect))
+
+        try:
+            part = game_surface.subsurface(rect)
+            screen.blit(part, (quake["offset"][0] + (rect[0]), quake["offset"][1] + (rect[1]) + spee["offset"]))
+        except:
+            print("Off screen...")
         # screen.blit(pygame.transform.scale(game_surface, (2560, 1360)), (quake["offset"][0], quake["offset"][1]))
 
-        screen.blit(part, (quake["offset"][0] + (rect[0]) - mapX, quake["offset"][1] + (rect[1]) + spee["offset"]))
-        screen.blit(vignette, (quake["offset"][0] + (rect[0]) - mapX, quake["offset"][1] + (rect[1]) + spee["offset"]))
+
+
+        blit_loc = [quake["offset"][0] + (rect[0]), quake["offset"][1] + (rect[1]) + spee["offset"]]
+        if doOnOpposite[0]:
+            blit_loc[0] = quake["offset"][0] + (rect[0]) + (rect.width - 256)
+        if doOnOpposite[1]:
+            blit_loc[1] = quake["offset"][1] + (rect[1]) + (rect.height - 256) + spee["offset"]
+
+        screen.blit(vignette_amin[vignette_number], blit_loc)
 
 
         for enemy in enemy_list:
@@ -1448,18 +1552,21 @@ def game_draw():
                 else:
                     screen.blit(enemy["images"][5], (quake["offset"][0] + (enemy["rect"][0]), quake["offset"][1] + (enemy["rect"][1]) + spee["offset"]))
             if enemy["light"]:
-                rect = pygame.Rect(enemy["rect"][0] - (48 + 64) - mapX, enemy["rect"][1] - (48 + 64), 256, 256)
+                rect = pygame.Rect(enemy["rect"][0] - (48 + 64), enemy["rect"][1] - (48 + 64), 256, 256)
                 rect = rect.clamp(pygame.Rect(0, 0, game_surface.get_width(), game_surface.get_height()))
                 part = game_surface.subsurface(rect)
                 # screen.blit(pygame.transform.scale(game_surface, (2560, 1360)), (quake["offset"][0], quake["offset"][1]))
 
                 screen.blit(part, (quake["offset"][0] + (rect[0]), quake["offset"][1] + (rect[1]) + spee["offset"]))
-                screen.blit(vignette, (quake["offset"][0] + (rect[0]), quake["offset"][1] + (rect[1]) + spee["offset"]))
+                screen.blit(vignette_amin[vignette_number], (quake["offset"][0] + (rect[0]), quake["offset"][1] + (rect[1]) + spee["offset"]))
     else:
         screen.blit(game_surface, (0 + int(quake["offset"][0]), 0 + int(quake["offset"][1] + spee["offset"])))
     # game_surface.scroll(int(quake["offset"][0]), int(quake["offset"][1] + spee["offset"]))
     # screen.blit(game_surface, (0, 0))
 
+    colorkey = (0, 0, 0)
+    hud_surface.set_colorkey(colorkey)
+    screen.blit(hud_surface, (0 - int(quake["offset"][0]), 0 - int(quake["offset"][1])))
     pygame.display.flip()
 
     # Delay until time for next frame
