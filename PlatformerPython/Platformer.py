@@ -21,9 +21,9 @@ level_b6 = [
     "#T              ###                                                                                         #",
     "###                                                                                                         #",
     "#                   #######                                                                                 #",
+    "#        WWWWWW  WW                                                                                         #",
+    "######  ############                                                                                        #",
     "#                                                                                                           #",
-    "#       ############                                                                                        #",
-    "######                                                                                                      #",
     "#                       #####                                                                               #",
     "#o         ######                                                                                           #",
     "#############################################################################################################",
@@ -286,7 +286,6 @@ menuMusic = pygame.mixer.Sound("assets/loop.wav")
 sounds = {
     "bang" : pygame.mixer.Sound("assets/bang.wav"),
     "jump" : pygame.mixer.Sound("assets/jump.wav"),
-    "jump2": pygame.mixer.Sound("assets/jump2.wav"),
     "switch": pygame.mixer.Sound("assets/switch.wav"),
     "transition": pygame.mixer.Sound("assets/transition.wav")
 
@@ -314,6 +313,7 @@ def custom_game_init():
     global particle_types
     global bullets
     global bullet_image
+    global bullet_glow_image
     pygame.mouse.set_cursor(*pygame.cursors.diamond)
 
     switchsheet = spritesheet.spritesheet('assets/switch.png')
@@ -386,7 +386,7 @@ def custom_game_init():
     }
 
     pygame.display.set_icon(player["assets"]["idle"][0])
-    pygame.display.set_caption("Blob Bash")
+    pygame.display.set_caption("They're behind everything")
 
     exit_ss = spritesheet.spritesheet('assets/exit_32.png')
 
@@ -406,11 +406,16 @@ def custom_game_init():
     background_image = pygame.image.load("assets/background.png")
     bullet_image = pygame.image.load("assets/bullet.png")
 
+    bullet_glow_image = pygame.image.load("assets/bullet_glow.png")
+    colorkey = bullet_glow_image.get_at((0, 0))
+    bullet_glow_image.set_colorkey(colorkey)
+
     particle_types = {
         "wall" : pygame.image.load("assets/particle.png"),
         "slime": pygame.image.load("assets/slime.png"),
         "dark": pygame.image.load("assets/dark.png"),
         "blue": pygame.image.load("assets/blue.png"),
+        "red": pygame.image.load("assets/red.png"),
 
     }
 
@@ -484,7 +489,7 @@ def draw_particles(surface):
             del particles[i]
 
 def create_explosion(rect):
-    for i in range(0, random.randint(40, 80)):
+    for i in range(0, random.randint(80, 160)):
         pos = rect.move(0, 0)
         pos[0] += random.randint(0, 32)
         pos[1] += random.randint(0, 32)
@@ -503,14 +508,21 @@ def create_blue_explosion(rect):
         pos[1] += random.randint(0, 32)
         add_particle(pos, "blue", [random.randint(-8, 8), random.randint(-8, 8)], random.randint(20, 100), True)
 
+def create_red_explosion(rect):
+    for i in range(0, random.randint(10, 20)):
+        pos = rect.move(0, 0)
+        # pos[0] += random.randint(0, 32)
+        # pos[1] += random.randint(16, 48)
+        add_particle(pos, "red", [random.randint(-12, 12), random.randint(-2, 12)], random.randint(20, 100), True)
+
 def shoot_bullet(pos, dir):
 
     global bullets, particle_types, bullet_image
-
-    dir[0] = dir[0] * 2
-    dir[1] = dir[1] * 2
+    speed = 6
+    dir[0] = dir[0] * speed
+    dir[1] = dir[1] * speed
     bullet = {
-        "rect": pygame.Rect(pos[0] + 16 + ((dir[0] / abs(dir[0]))* 16), pos[1], 4, 4),
+        "rect": pygame.Rect(pos[0], pos[1], 8, 8),
         "image": bullet_image,
         "velocity": dir
     }
@@ -524,22 +536,31 @@ def draw_and_update_bullets(surface):
 
     for i in range(len(bullets) - 1, -1, -1):
         bullet = bullets[i]
+
+
+        bullet_move_rect = bullet["rect"].move(0, bullet["velocity"][1])
+
+        for a in range(0, abs(bullet["velocity"][0])):
+            bullet_move_rect = bullet["rect"].move(bullet["velocity"][0] / abs(bullet["velocity"][0]), 0)
+            if bullet_move_rect.collidelist(wall_list) == -1:
+                bullet["rect"] = bullet_move_rect
+            else:
+                create_red_explosion(bullets[i]["rect"])
+
+                del bullets[i]
+                break
+
+            e = bullet_move_rect.collidelist(rects)
+            if  e != -1:
+                create_explosion(bullet["rect"])
+                create_red_explosion(bullets[i]["rect"])
+                del enemy_list[e]
+                del bullets[i]
+
+                add_score(100, bullet["rect"])
+                break
         surface.blit(bullet["image"], bullet["rect"].move(-mapX, 0))
 
-        bullet_move_rect = bullet["rect"].move(bullet["velocity"][0], bullet["velocity"][1])
-        if bullet_move_rect.collidelist(wall_list) == -1:
-            bullet["rect"] = bullet_move_rect
-        else:
-            create_blue_explosion(bullets[i]["rect"])
-            del bullets[i]
-        e = bullet_move_rect.collidelist(rects)
-        if  e != -1:
-            del enemy_list[e]
-            del bullets[i]
-
-
-            add_score(100, bullet["rect"])
-            create_explosion(bullet["rect"])
 
 
 def add_score(amount, pos):
@@ -671,11 +692,7 @@ def update_game_running():
                     pos[1] += 32
                     # add_particle(pos, "slime", [random.randint(-8, 8), -random.randint(0, 8)], random.randint(40, 80), True)
 
-                if (player["jumps"]==1):
                     sounds["jump"].play()
-
-                else:
-                    sounds["jump2"].play()
 
         else:
             if player["inAir"]:
@@ -748,7 +765,7 @@ mapScrollY = {
     "speed": 16,
     "acceleration": 8,
     #the percentage of the screen to start scrolling at
-    "percent_of_screen": 40,
+    "percent_of_screen": 10,
 }
 
 
@@ -1109,7 +1126,7 @@ def restart_level():
     global level_list
     global menuMusic
 
-    player["lives"] -= 1
+    # player["lives"] -= 1
     if player["lives"] < 1:
         set_game_state("start")
         pygame.mixer.music.stop()
@@ -1545,20 +1562,9 @@ def game_draw():
         screen.blit(vignette_amin[vignette_number], blit_loc)
 
 
-        for enemy in enemy_list:
-            if enemy["type"] == "bee":
-                if enemy["direction"][0] > 0:
-                    screen.blit(enemy["images"][4], (quake["offset"][0] + (enemy["rect"][0]), quake["offset"][1] + (enemy["rect"][1]) + spee["offset"]))
-                else:
-                    screen.blit(enemy["images"][5], (quake["offset"][0] + (enemy["rect"][0]), quake["offset"][1] + (enemy["rect"][1]) + spee["offset"]))
-            if enemy["light"]:
-                rect = pygame.Rect(enemy["rect"][0] - (48 + 64), enemy["rect"][1] - (48 + 64), 256, 256)
-                rect = rect.clamp(pygame.Rect(0, 0, game_surface.get_width(), game_surface.get_height()))
-                part = game_surface.subsurface(rect)
-                # screen.blit(pygame.transform.scale(game_surface, (2560, 1360)), (quake["offset"][0], quake["offset"][1]))
+        for bullet in bullets:
+            screen.blit(bullet_glow_image, bullet["rect"].move(-mapX, 0))
 
-                screen.blit(part, (quake["offset"][0] + (rect[0]), quake["offset"][1] + (rect[1]) + spee["offset"]))
-                screen.blit(vignette_amin[vignette_number], (quake["offset"][0] + (rect[0]), quake["offset"][1] + (rect[1]) + spee["offset"]))
     else:
         screen.blit(game_surface, (0 + int(quake["offset"][0]), 0 + int(quake["offset"][1] + spee["offset"])))
     # game_surface.scroll(int(quake["offset"][0]), int(quake["offset"][1] + spee["offset"]))
