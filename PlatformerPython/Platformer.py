@@ -33,7 +33,22 @@ level_b6 = [
 level_b5 = [
     "##############################",
     "#                            #",
-    "# o                          #",
+    "# x                          #",
+    "######                       #",
+    "#                            #",
+    "#T                            #",
+    "######                       #",
+    "#                            #",
+    "#T                           #",
+    "######                       #",
+    "#                            #",
+    "#T                           #",
+    "######                       #",
+    "#                            #",
+    "#T                           #",
+    "######                       #",
+    "#                            #",
+    "#T                           #",
     "######                       #",
     "#                            #",
     "#                            #",
@@ -42,29 +57,14 @@ level_b5 = [
     "#                            #",
     "######                       #",
     "#                            #",
-    "#                            #",
+    "#T                           #",
     "######                       #",
     "#                            #",
     "#                            #",
     "######                       #",
     "#                            #",
     "#                            #",
-    "######                       #",
-    "#                            #",
-    "#                            #",
-    "######                       #",
-    "#                            #",
-    "#                            #",
-    "######                       #",
-    "#                            #",
-    "#                            #",
-    "######                       #",
-    "#                            #",
-    "#                            #",
-    "######                       #",
-    "#                            #",
-    "#                            #",
-    "######            x          #",
+    "######             o       T #",
     "##############################",
 ]
 
@@ -264,7 +264,8 @@ quake = {
     "speed" : 8,
     "do" : False,
     "timeout" : 0,
-
+    "flicker" : False,
+    "flickering" : False
 }
 
 spee = {
@@ -293,7 +294,8 @@ sounds = {
     "transition": pygame.mixer.Sound("assets/transition.wav"),
     "shoot": pygame.mixer.Sound("assets/pistolshot01.wav"),
     "failed_shot": pygame.mixer.Sound("assets/failed_shot.wav"),
-    "reload": pygame.mixer.Sound("assets/reload.wav")
+    "reload": pygame.mixer.Sound("assets/reload.wav"),
+    "break": pygame.mixer.Sound("assets/shoot.wav")
 
 }
 pygame.mixer.music.set_volume(0.6)
@@ -342,7 +344,7 @@ def custom_game_init():
 
 
     switchsheet = spritesheet.spritesheet('assets/switch.png')
-    switch_images = [switchsheet.image_at((0, 0, 32, 32)),
+    switch_images = [switchsheet.image_at((0, 0, 32, 32), ),
                      switchsheet.image_at((0, 32, 32, 32))]
 
     ammo = 8
@@ -408,7 +410,7 @@ def custom_game_init():
         "ducked": False,
         "direction": "right",
         "can": {
-            "pound":False,
+            "pound":True,
             "shoot":True
         },
         "dash": [0, 0]
@@ -554,8 +556,7 @@ def shoot_bullet(pos, dir):
     m = float(magnitude(dir))
     dir[0] = (dir[0] / m) * speed
     dir[1] = (dir[1] / m) * speed
-    print(str(dir))
-    print(str(magnitude(dir)))
+
     bullet = {
         "rect": pygame.Rect(pos[0], pos[1], 8, 8),
         "image": bullet_image,
@@ -607,8 +608,8 @@ def draw_and_update_bullets(surface):
                         add_score(500, switch['rect'].move(0, 0))
                         switch['image'] = switch_images[1]
                         switch['active'] = True
-                        sounds["switch"].play()
-
+                        sounds["break"].play()
+                        create_explosion(switch["rect"])
                         win = True
                         for switch in switch_list:
                             if not switch['active']:
@@ -852,7 +853,8 @@ def draw_game_running():
     game_surface.blit(map_surface, (-mapX, -mapY))
 
     for switch in switch_list:
-        game_surface.blit(switch['image'], switch['rect'].move(-mapX, -mapY))
+        if not switch['active']:
+            game_surface.blit(switch['image'], switch['rect'].move(-mapX, -mapY))
         # if switch['active']:
         #     game_surface.blit(switch_images[0], switch['rect'])
         # elif not ['active']:
@@ -1442,13 +1444,12 @@ def game_input():
     LAST_MOUSEDOWN = MOUSEDOWN
 
     # print(str(MOUSEDOWN))
+    mouse_pos[0] = pygame.mouse.get_pos()[0]
+    mouse_pos[1] = pygame.mouse.get_pos()[1]
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-        if event.type == pygame.MOUSEMOTION:
-            mouse_pos[0] = pygame.mouse.get_pos()[0]
-            mouse_pos[1] = pygame.mouse.get_pos()[1]
         if event.type == pygame.MOUSEBUTTONUP:
             MOUSEDOWN = False
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -1584,6 +1585,20 @@ def game_draw():
 
 
     screen.fill((0, 0, 0))
+    if quake["flicker"]:
+        if quake["do"] or quake["timeout"] > 0:
+            quake["flickering"] = True
+            print("!!!")
+        else:
+            quake["flickering"] = False
+            print("...")
+        if quake["flickering"]:
+            if int(alpha)% 5 == 0:
+                spee["shade"] = False
+            else:
+                spee["shade"] = True
+        else:
+            spee["shade"] = True
 
     if spee["shade"] and current_game_state != game_state_dict["start"]:
 
