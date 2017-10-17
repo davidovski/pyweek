@@ -76,6 +76,9 @@ level_b4 = [
     "##############################",
     "##############################",
     "#                            #",
+    "#                            #",
+    "#                            #",
+    "#                            #",
     "#            T    T          #",
     "#            ######          #",
     "#                            #",
@@ -270,7 +273,7 @@ spee = {
     "do": False,
     "timer": 0,
     "beenonce": False,
-    "shade": True
+    "shade": False
 }
 
 freeze = False
@@ -287,7 +290,10 @@ sounds = {
     "bang" : pygame.mixer.Sound("assets/bang.wav"),
     "jump" : pygame.mixer.Sound("assets/jump.wav"),
     "switch": pygame.mixer.Sound("assets/switch.wav"),
-    "transition": pygame.mixer.Sound("assets/transition.wav")
+    "transition": pygame.mixer.Sound("assets/transition.wav"),
+    "shoot": pygame.mixer.Sound("assets/pistolshot01.wav"),
+    "failed_shot": pygame.mixer.Sound("assets/failed_shot.wav"),
+    "reload": pygame.mixer.Sound("assets/reload.wav")
 
 }
 pygame.mixer.music.set_volume(0.6)
@@ -297,6 +303,24 @@ pygame.joystick.init()
 # joystick.init()
 
 mute = False
+
+import math
+
+def magnitude(v):
+    return math.sqrt(v[0]*v[0] + v[1]*v[1])
+
+def add(u, v):
+    return [ u[i]+v[i] for i in range(len(u)) ]
+
+def sub(u, v):
+    return [ u[i]-v[i] for i in range(len(u)) ]
+
+def dot(u, v):
+    return sum(u[i]*v[i] for i in range(len(u)))
+
+def normalize(v):
+    vmag = magnitude(v)
+    return [ v[i]/vmag  for i in range(len(v)) ]
 
 def custom_game_init():
     global title_font
@@ -314,11 +338,16 @@ def custom_game_init():
     global bullets
     global bullet_image
     global bullet_glow_image
-    pygame.mouse.set_cursor(*pygame.cursors.diamond)
+    global ammo, bullet_fire_cooldown, bullet_fire_max_cooldown
+
 
     switchsheet = spritesheet.spritesheet('assets/switch.png')
     switch_images = [switchsheet.image_at((0, 0, 32, 32)),
                      switchsheet.image_at((0, 32, 32, 32))]
+
+    ammo = 8
+    bullet_fire_cooldown = 0
+    bullet_fire_max_cooldown = 10
 
     player = {
         "lives" : 5,
@@ -469,7 +498,7 @@ def draw_particles(surface):
         image.fill((255, 255, 255, alpha), None, pygame.BLEND_RGBA_MULT)
         # particle["image"].set_alpha()
 
-        surface.blit(image, (particle["pos"][0] - mapX, particle["pos"][1]))
+        surface.blit(image, (particle["pos"][0] - mapX, particle["pos"][1] -mapY ))
 
 
         if particle["gravity"]:
@@ -500,7 +529,7 @@ def create_slime_explosion(rect):
         pos = rect.move(0, 0)
         pos[0] += random.randint(0, 32)
         pos[1] += random.randint(0, 32)
-        add_particle(pos, "slime", [random.randint(-8, 8), random.randint(-8, 8)], random.randint(20, 100), True)
+        add_particle(pos, "red", [random.randint(-8, 8), random.randint(-8, 8)], random.randint(20, 100), True)
 def create_blue_explosion(rect):
     for i in range(0, random.randint(60, 120)):
         pos = rect.move(0, 0)
@@ -516,11 +545,17 @@ def create_red_explosion(rect):
         add_particle(pos, "red", [random.randint(-12, 12), random.randint(-2, 12)], random.randint(20, 100), True)
 
 def shoot_bullet(pos, dir):
-
+    global bullet_fire_cooldown, bullet_fire_max_cooldown, ammo
+    bullet_fire_cooldown = bullet_fire_max_cooldown
+    sounds["shoot"].play()
+    ammo -= 1
     global bullets, particle_types, bullet_image
-    speed = 6
-    dir[0] = dir[0] * speed
-    dir[1] = dir[1] * speed
+    speed = 8
+    m = float(magnitude(dir))
+    dir[0] = (dir[0] / m) * speed
+    dir[1] = (dir[1] / m) * speed
+    print(str(dir))
+    print(str(magnitude(dir)))
     bullet = {
         "rect": pygame.Rect(pos[0], pos[1], 8, 8),
         "image": bullet_image,
@@ -538,10 +573,16 @@ def draw_and_update_bullets(surface):
         bullet = bullets[i]
 
 
-        bullet_move_rect = bullet["rect"].move(0, bullet["velocity"][1])
+        surface.blit(bullet["image"], bullet["rect"].move(-mapX, -mapY))
+        times = int(abs(bullet["velocity"][0]))
+        for a in range(0, int(abs(bullet["velocity"][0])) + int(abs(bullet["velocity"][1]))):
+            if a > times:
+                bullet_move_rect = bullet["rect"].move(0, bullet["velocity"][1])
+            else:
+                bullet_move_rect = bullet["rect"].move(bullet["velocity"][0], 0)
 
-        for a in range(0, abs(bullet["velocity"][0])):
-            bullet_move_rect = bullet["rect"].move(bullet["velocity"][0] / abs(bullet["velocity"][0]), 0)
+
+            # surface.blit(bullet["image"], bullet["rect"].move(-mapX, 0))
             if bullet_move_rect.collidelist(wall_list) == -1:
                 bullet["rect"] = bullet_move_rect
             else:
@@ -559,7 +600,29 @@ def draw_and_update_bullets(surface):
 
                 add_score(100, bullet["rect"])
                 break
-        surface.blit(bullet["image"], bullet["rect"].move(-mapX, 0))
+            brk = False
+            for switch in switch_list:
+                if not switch['active']:
+                    if bullet['rect'].colliderect(switch['rect']):
+                        add_score(500, switch['rect'].move(0, 0))
+                        switch['image'] = switch_images[1]
+                        switch['active'] = True
+                        sounds["switch"].play()
+
+                        win = True
+                        for switch in switch_list:
+                            if not switch['active']:
+                                win = False
+                                break
+                        if win:
+                            quake["timeout"] = 20
+                            sounds["bang"].play()
+                            create_explosion(level_exit["rect"])
+                        del bullets[i]
+                        brk = True
+            if brk:
+                break
+
 
 
 
@@ -577,7 +640,7 @@ def add_score(amount, pos):
         "gravity": False
 
     }
-    particles.append(text)
+    # particles.append(text)
 
 def add_particle(pos, type, velocity=[0,0], life=20, gravity=False):
     global particles
@@ -591,7 +654,9 @@ def add_particle(pos, type, velocity=[0,0], life=20, gravity=False):
     }
     particles.append(particle)
 
-
+ACCELERATION = -3
+JUMP_FORCE = 16
+TERMINAL_VELOCITY = 32
 
 def update_game_running():
     global keys
@@ -605,8 +670,10 @@ def update_game_running():
     global level_exit
     global freeze
     global switch_images
-    global key_taps, key_times
-
+    global key_taps, key_times, bullet_fire_cooldown, ammo
+    bullet_fire_cooldown -= 1
+    if bullet_fire_cooldown == int(bullet_fire_max_cooldown / 2):
+        sounds["reload"].play()
 
     if keys[pygame.K_m] and not last_keys[pygame.K_m]:
         mute = not mute
@@ -627,8 +694,9 @@ def update_game_running():
 
         player["inAir"] = check_and_move_player(3, 0, -player["yv"]) or  player["yv"] == 0
 
-        if player["yv"] > -32:
-            player["yv"] -= 2
+
+        if player["yv"] > -TERMINAL_VELOCITY:
+            player["yv"] += ACCELERATION
         if not player["inAir"]:
             player["yv"] = 0
 
@@ -645,20 +713,24 @@ def update_game_running():
         else:
             player["ducked"] = False
 
-        if keys[pygame.K_SPACE] and not last_keys[pygame.K_SPACE] and player["can"]["shoot"]:
-            v = [0,16]
-            if player["direction"] == "left":
-                v = [-16, 0]
-            if player["direction"] == "right":
-                v = [16, 0]
-            shoot_bullet((player['rect'][0], player['rect'][1] + 16), v)
+        if MOUSEDOWN and not LAST_MOUSEDOWN:
+            if ammo > 0:
+                if bullet_fire_cooldown < 0:
+                    mp = mouse_pos
+                    mp[0] += mapX
+                    mp[1] += mapY
+                    v = [mp[0] - player["rect"][0], mp[1] - player["rect"][1]]
 
+                    # v = normalize(v)
 
+                    shoot_bullet((player['rect'][0] + 16, player['rect'][1] + 3), v)
+            else:
+                sounds["failed_shot"].play()
 
-        if player["dash"][0] > 0:
-            player["dash"][0] = -1
-        if player["dash"][0] < 0:
-            player["dash"][0] = 1
+        if keys[pygame.K_r]:
+            ammo = 8
+            sounds["reload"].play()
+
 
         if not player["ducked"]:
             if keys[pygame.K_d]:
@@ -682,7 +754,7 @@ def update_game_running():
                 player["jumps"] = 0
 
             if player["jumps"] < player["max_jumps"] and keys[pygame.K_w] and not last_keys[pygame.K_w]:
-                player["yv"] = 12
+                player["yv"] = JUMP_FORCE
 
                 player["jumps"] += 1
 
@@ -727,21 +799,7 @@ def update_game_running():
         #     if player['rect'].colliderect(enemy['rect']):
         #         set_game_state("start")
 
-        for switch in switch_list:
-            if not switch['active'] and player['rect'].colliderect(switch['rect']):
-                add_score(500, switch['rect'].move(0,0))
-                switch['image'] = switch_images[1]
-                switch['active'] = True
-                sounds["switch"].play()
-                win = True
-                for switch in switch_list:
-                    if not switch['active']:
-                        win = False
-                        break
-                if win:
-                    quake["timeout"] = 20
-                    sounds["bang"].play()
-                    create_explosion(level_exit["rect"])
+
 
     return
 mapX = 0
@@ -779,7 +837,7 @@ def draw_game_running():
 
     global score
     global keys
-    global clock, mapX, mapY
+    global clock, mapX, mapY, ammo
 
 
     levelWidth = len(level_list[level_index][0]) * 32
@@ -850,7 +908,8 @@ def draw_game_running():
 
     level_text = level_font.render(level_name, 1, (255, 255, 255))
 
-    # hud_surface.blit(level_text, (4, 4))
+    bullet_text = level_font.render(str(ammo), 1, (255, 255, 255))
+    hud_surface.blit(bullet_text, (4, 4))
 
     score_string = str(score)
     for i in range(0, 10 - len(score_string)):
@@ -1124,9 +1183,11 @@ def restart_level():
     global map_surface
     global level_index
     global level_list
-    global menuMusic
+    global menuMusic, ammo
 
     # player["lives"] -= 1
+    ammo = 8
+    bullet_fire_cooldown = bullet_fire_max_cooldown
     if player["lives"] < 1:
         set_game_state("start")
         pygame.mixer.music.stop()
@@ -1324,12 +1385,15 @@ def game_run():
         custom_game_reset()
 
     while True:
+        pygame.mouse.set_cursor(*pygame.cursors.broken_x)
         game_input()
         game_update()
         game_draw()
     return
 
-
+mouse_pos = [0, 0]
+LAST_MOUSEDOWN = False
+MOUSEDOWN = False
 def game_input():
     """
     Fill the keys list with the
@@ -1339,6 +1403,7 @@ def game_input():
     global keys, keys_times, key_taps
     global last_keys
     global mouse_pos
+    global MOUSEDOWN, LAST_MOUSEDOWN
 
     last_keys = keys
     keys = pygame.key.get_pressed()
@@ -1374,12 +1439,20 @@ def game_input():
         pygame.quit()
         sys.exit()
 
+    LAST_MOUSEDOWN = MOUSEDOWN
+
+    # print(str(MOUSEDOWN))
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
         if event.type == pygame.MOUSEMOTION:
-            mouse_pos = pygame.mouse.get_pos
+            mouse_pos[0] = pygame.mouse.get_pos()[0]
+            mouse_pos[1] = pygame.mouse.get_pos()[1]
+        if event.type == pygame.MOUSEBUTTONUP:
+            MOUSEDOWN = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            MOUSEDOWN = True
     return
 
 
@@ -1541,8 +1614,8 @@ def game_draw():
         if rect.y + rect.height > game_surface.get_height():
             rect[3] = game_surface.get_height() - rect.y
         rect.normalize()
-        print(str(doOnOpposite))
-        print(str(rect))
+
+
 
         try:
             part = game_surface.subsurface(rect)
