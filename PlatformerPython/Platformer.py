@@ -274,7 +274,7 @@ spee = {
     "do": False,
     "timer": 0,
     "beenonce": False,
-    "shade": False
+    "shade": True
 }
 
 freeze = False
