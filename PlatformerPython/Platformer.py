@@ -12,16 +12,16 @@ joystick = None
 
 level_b6 = [
     "#############################################################################################################",
-    "#                                                                                                           #",
-    "#x                         T                                                                                #",
+    "#T                         T                                                                                #",
+    "#x                                                                                                          #",
     "######                     ##                                                                               #",
     "#            ########                                                                                       #",
-    "#                      ##  T                                                                                #",
+    "#                      ##                                                                                   #",
     "#    ######                ##                                                                               #",
-    "#T              ###                                                                                         #",
+    "#         T     ###                                                                                         #",
     "###                                                                                                         #",
-    "#                   #######                                                                                 #",
-    "#        WWWWWW  WW                                                                                         #",
+    "#T                  #######                                                                                 #",
+    "#        WWWWWW  WW    T                                                                                    #",
     "######  ############                                                                                        #",
     "#                                                                                                           #",
     "#                       #####                                                                               #",
@@ -290,7 +290,7 @@ menuMusic = pygame.mixer.Sound("assets/loop.wav")
 sounds = {
     "bang" : pygame.mixer.Sound("assets/bang.wav"),
     "jump" : pygame.mixer.Sound("assets/jump.wav"),
-    "switch": pygame.mixer.Sound("assets/switch.wav"),
+    "camera": pygame.mixer.Sound("assets/switch.wav"),
     "transition": pygame.mixer.Sound("assets/transition.wav"),
     "shoot": pygame.mixer.Sound("assets/pistolshot01.wav"),
     "failed_shot": pygame.mixer.Sound("assets/failed_shot.wav"),
@@ -307,6 +307,15 @@ pygame.joystick.init()
 mute = False
 
 import math
+
+def rot_center(image, angle):
+    """rotate an image while keeping its center and size"""
+    orig_rect = image.get_rect()
+    rot_image = pygame.transform.rotate(image, angle)
+    rot_rect = orig_rect.copy()
+    rot_rect.center = rot_image.get_rect().center
+    rot_image = rot_image.subsurface(rot_rect).copy()
+    return rot_image
 
 def magnitude(v):
     return math.sqrt(v[0]*v[0] + v[1]*v[1])
@@ -331,7 +340,7 @@ def custom_game_init():
     global level_list
     global level_exit
     global enemy_images_bee
-    global switch_images
+    global camera_images
     global background_image
     global enemy_images_wheel
     global particles
@@ -340,12 +349,14 @@ def custom_game_init():
     global bullets
     global bullet_image
     global bullet_glow_image
-    global ammo, bullet_fire_cooldown, bullet_fire_max_cooldown
+    global ammo, bullet_fire_cooldown, bullet_fire_max_cooldown, camera_dot_images
 
 
-    switchsheet = spritesheet.spritesheet('assets/switch.png')
-    switch_images = [switchsheet.image_at((0, 0, 32, 32), ),
-                     switchsheet.image_at((0, 32, 32, 32))]
+    camerasheet = spritesheet.spritesheet('assets/camera.png')
+    camera_images = [rot_center(camerasheet.image_at((0, 0, 32, 32)), -45),
+                     pygame.transform.flip(rot_center(camerasheet.image_at((0, 0, 32, 32)), -45), True, False)]
+    camera_dot_images = [rot_center(camerasheet.image_at((0, 32, 32, 32)), -45),
+                     pygame.transform.flip(rot_center(camerasheet.image_at((0, 32, 32, 32)), -45), True, False)]
 
     ammo = 8
     bullet_fire_cooldown = 0
@@ -471,7 +482,7 @@ def custom_game_init():
     particles = []
     bullets = []
 
-    # switch_image = pygame.image.load("switch_32.png")
+    # camera_image = pygame.image.load("camera_32.png")
 
     title_font = pygame.font.SysFont("jokerman", 50)
     level_font = pygame.font.SysFont("ariel", 32)
@@ -602,17 +613,17 @@ def draw_and_update_bullets(surface):
                 add_score(100, bullet["rect"])
                 break
             brk = False
-            for switch in switch_list:
-                if not switch['active']:
-                    if bullet['rect'].colliderect(switch['rect']):
-                        add_score(500, switch['rect'].move(0, 0))
-                        switch['image'] = switch_images[1]
-                        switch['active'] = True
+            for camera in camera_list:
+                if not camera['active']:
+                    if bullet['rect'].colliderect(camera['rect']):
+                        add_score(500, camera['rect'].move(0, 0))
+                        camera['image'] = camera_images[1]
+                        camera['active'] = True
                         sounds["break"].play()
-                        create_explosion(switch["rect"])
+                        create_explosion(camera["rect"])
                         win = True
-                        for switch in switch_list:
-                            if not switch['active']:
+                        for camera in camera_list:
+                            if not camera['active']:
                                 win = False
                                 break
                         if win:
@@ -665,12 +676,12 @@ def update_game_running():
 
     global player
     global enemy_list
-    global switch_list
+    global camera_list
     global score
     global mute
     global level_exit
     global freeze
-    global switch_images
+    global camera_images
     global key_taps, key_times, bullet_fire_cooldown, ammo
     bullet_fire_cooldown -= 1
     if bullet_fire_cooldown == int(bullet_fire_max_cooldown / 2):
@@ -763,9 +774,9 @@ def update_game_running():
                     pos = player["rect"].move(0,0)
                     pos[0] += 16 + random.randint(-4, 4)
                     pos[1] += 32
-                    # add_particle(pos, "slime", [random.randint(-8, 8), -random.randint(0, 8)], random.randint(40, 80), True)
+                    add_particle(pos, "wall", [int(random.randint(-32, 32) / 8), int(random.randint(-32, 32) / 8)], random.randint(40, 80), True)
 
-                    sounds["jump"].play()
+                sounds["jump"].play()
 
         else:
             if player["inAir"]:
@@ -785,12 +796,12 @@ def update_game_running():
         # Check if we have reached the exit or hit enemy
         if player['rect'].colliderect(level_exit['rect']):
             win = True
-            for switch in switch_list:
-                if not switch['active']:
+            for camera in camera_list:
+                if not camera['active']:
                     win = False
                     break
             if win:
-
+                ammo = 8
                 score += 1000
                 spee["do"] = True
                 freeze = True
@@ -824,7 +835,7 @@ mapScrollY = {
     "speed": 16,
     "acceleration": 8,
     #the percentage of the screen to start scrolling at
-    "percent_of_screen": 10,
+    "percent_of_screen": 30,
 }
 
 
@@ -850,15 +861,22 @@ def draw_game_running():
     map_area.unionall_ip(wall_list)
     game_surface.blit(background_image, (0, 0))
     map_surface.set_colorkey( (0,0,0), pygame.RLEACCEL )
+
+    for camera in camera_list:
+        pygame.draw.rect(game_surface, (30, 30, 30), (camera['rect'][0] + 12 - mapX, camera['rect'][1] - 8 - mapY, 12, 24))
+        if not camera['active']:
+            if camera['rect'][0] > player['rect'][0]:
+                game_surface.blit(camera_images[1], camera['rect'].move(-mapX, -mapY))
+            else:
+                game_surface.blit(camera_images[0], camera['rect'].move(-mapX, -mapY))
+
     game_surface.blit(map_surface, (-mapX, -mapY))
 
-    for switch in switch_list:
-        if not switch['active']:
-            game_surface.blit(switch['image'], switch['rect'].move(-mapX, -mapY))
-        # if switch['active']:
-        #     game_surface.blit(switch_images[0], switch['rect'])
+
+        # if camera['active']:
+        #     game_surface.blit(camera_images[0], camera['rect'])
         # elif not ['active']:
-        #     game_surface.blit(switch_images[1], switch['rect'])
+        #     game_surface.blit(camera_images[1], camera['rect'])
     draw_particles(game_surface)
     # pygame.display.set_icon(player["assets"]["right"][int(alpha / 2) % len(player["assets"]["right"])])
     for enemy in enemy_list:
@@ -880,8 +898,8 @@ def draw_game_running():
         else:
             game_surface.blit(player["assets"]["idle"][int(alpha / 2) % len(player["assets"]["idle"])], (player['rect'][0]- mapX, player["rect"][1] + 1 - mapY))
     win = True
-    for switch in switch_list:
-        if not switch['active']:
+    for camera in camera_list:
+        if not camera['active']:
             win = False
             break
     if win:
@@ -1005,16 +1023,16 @@ def create_map(level_data, block_size):
     global wall_list
     global level_exit
     global enemy_list
-    global switch_list
+    global camera_list
 
     wall_list = []
     enemy_list = []
-    switch_list = []
+    camera_list = []
 
     # Reset the wall & enemy lists
     wall_list[:] = []
     enemy_list[:] = []
-    switch_list[:] = []
+    camera_list[:] = []
 
     # Fill the walls array with rectangles for each '#'
     x = y = 0
@@ -1042,9 +1060,9 @@ def create_map(level_data, block_size):
             elif col == "W":
                 add_enemy(x, y, 4, "wheel")
 
-            # Set the switch position if we find an 'T'
+            # Set the camera position if we find an 'T'
             elif col == "T":
-                add_switch(x, y, 10)
+                add_camera(x, y, 10)
 
             x += block_size
         y += block_size
@@ -1099,21 +1117,21 @@ def create_map_surface(wall_list):
     # return the image surface
     return map_surface
 
-def add_switch(x, y, value):
+def add_camera(x, y, value):
     """
     Create a new enemy data dictionary
     Add it to the enemy list
     """
-    global switch_list
-    global switch_images
+    global camera_list
+    global camera_images
 
-    switch = {
-        "image": switch_images[0],
+    camera = {
+        "image": camera_images[0],
         "rect": pygame.Rect(x, y, 32, 32),
         "active": False,
         "value": value
     }
-    switch_list.append(switch)
+    camera_list.append(camera)
 
 def add_enemy(x, y, move_step, type):
     """
@@ -1651,12 +1669,22 @@ def game_draw():
 
 
         for bullet in bullets:
-            screen.blit(bullet_glow_image, bullet["rect"].move(-mapX, 0))
+            screen.blit(bullet_glow_image, bullet["rect"].move(-mapX, -mapY))
+
+
 
     else:
         screen.blit(game_surface, (0 + int(quake["offset"][0]), 0 + int(quake["offset"][1] + spee["offset"])))
     # game_surface.scroll(int(quake["offset"][0]), int(quake["offset"][1] + spee["offset"]))
     # screen.blit(game_surface, (0, 0))
+    if current_game_state != game_state_dict["start"]:
+        for camera in camera_list:
+            if not camera['active']:
+                if int(alpha / 20) % 2 == 0:
+                    if camera['rect'][0] > player['rect'][0]:
+                        screen.blit(camera_dot_images[1], camera['rect'].move(-mapX, -mapY))
+                    else:
+                        screen.blit(camera_dot_images[0], camera['rect'].move(-mapX, -mapY))
 
     colorkey = (0, 0, 0)
     hud_surface.set_colorkey(colorkey)

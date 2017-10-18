@@ -151,6 +151,7 @@ def update_game_running():
     # Check if we have reached the exit or hit enemy
     if player['rect'].colliderect(level_exit['rect']):
         score += len(enemy_list)
+        ammo = 8
         load_next_level()
     
 
