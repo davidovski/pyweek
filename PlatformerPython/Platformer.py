@@ -208,7 +208,7 @@ def custom_game_init():
 
     ammo = 8
     bullet_fire_cooldown = 0
-    bullet_fire_max_cooldown = 1
+    bullet_fire_max_cooldown = 20
 
     player = {
         "lives" : 5,
@@ -587,7 +587,7 @@ def update_game_running():
             else:
                 sounds["failed_shot"].play()
 
-        if keys[pygame.K_r]:
+        if keys[pygame.K_r] and not last_keys[pygame.K_r] and ammo == 0:
             ammo = 8
             sounds["reload"].play()
 
@@ -977,7 +977,8 @@ def add_camera(x, y, value):
         "image": camera_images[0],
         "rect": pygame.Rect(x, y, 32, 32),
         "active": False,
-        "value": value
+        "value": value,
+        "alpha": random.randint(20, 100)
     }
     camera_list.append(camera)
 
@@ -1527,8 +1528,9 @@ def game_draw():
     # screen.blit(game_surface, (0, 0))
     if current_game_state != game_state_dict["start"]:
         for camera in camera_list:
+            camera['alpha'] += 1
             if not camera['active']:
-                if int(alpha / 20) % 2 == 0:
+                if int(camera['alpha'] / 20) % 2 == 0:
                     if camera['rect'][0] > player['rect'][0]:
                         screen.blit(camera_dot_images[1], camera['rect'].move(-mapX, -mapY))
                     else:
